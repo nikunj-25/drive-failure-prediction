@@ -1,5 +1,6 @@
 venv/
-data/
+data/*
+!data/*.dvc
 __pycache__/
 .ipynb_checkpoints/
 mlflow.db

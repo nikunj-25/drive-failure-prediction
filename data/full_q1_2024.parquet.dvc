@@ -1,0 +1,5 @@
+outs:
+- md5: 141a2270a0cdd5ca904e45b2271fedd3
+  size: 226972410
+  hash: md5
+  path: full_q1_2024.parquet
