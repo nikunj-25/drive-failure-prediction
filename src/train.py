@@ -1,10 +1,15 @@
 import time
 
+import mlflow
+import mlflow.xgboost
 from sklearn.metrics import average_precision_score
 from xgboost import XGBClassifier
 
-from dataset import load_labeled, time_split
+from dataset import (HORIZON_DAYS, PROJECT_DIR, SMART_COLS, TEST_END,
+                     TEST_START, TRAIN_END, load_labeled, time_split)
 
+TRACKING_URI = "sqlite:///" + (PROJECT_DIR / "mlflow.db").as_posix()
+EXPERIMENT_NAME = "drive-failure-7d"
 CUTOFFS = [("0_5", 0.5), ("0_99", 0.99)]
 
 
@@ -39,6 +44,26 @@ def evaluate(y_test, proba):
     return results
 
 
+def log_to_mlflow(run_name, params, train_seconds, results, model):
+    """Record settings, scores and the model as one MLflow run."""
+    mlflow.set_tracking_uri(TRACKING_URI)
+    mlflow.set_experiment(EXPERIMENT_NAME)
+    with mlflow.start_run(run_name=run_name) as run:
+        mlflow.log_params(params)
+        mlflow.log_params({
+            "horizon_days": HORIZON_DAYS,
+            "train_end": str(TRAIN_END.date()),
+            "test_start": str(TEST_START.date()),
+            "test_end": str(TEST_END.date()),
+            "features": ",".join(SMART_COLS),
+        })
+        mlflow.log_metric("train_seconds", train_seconds)
+        for name, value in results.items():
+            mlflow.log_metric(name, value)
+        mlflow.xgboost.log_model(model, name="model")
+    return run.info.run_id
+
+
 if __name__ == "__main__":
     full = load_labeled()
     X_train, y_train, X_test, y_test = time_split(full)
@@ -56,3 +81,7 @@ if __name__ == "__main__":
     print("train_seconds:", train_seconds)
     for name, value in results.items():
         print(name, round(value, 4))
+
+    run_id = log_to_mlflow("train_py_baseline_xgb_200_trees", params,
+                           train_seconds, results, model)
+    print("run id:", run_id)
