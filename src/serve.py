@@ -1,16 +1,14 @@
-import mlflow
-import mlflow.xgboost
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
+from xgboost import XGBClassifier
 
 from dataset import PROJECT_DIR, SMART_COLS
 
-TRACKING_URI = "sqlite:///" + (PROJECT_DIR / "mlflow.db").as_posix()
-MODEL_URI = "runs:/d6c40d6f22f84d3294cfe724987f6014/model"
+MODEL_PATH = PROJECT_DIR / "models" / "model.ubj"
 
-mlflow.set_tracking_uri(TRACKING_URI)
-model = mlflow.xgboost.load_model(MODEL_URI)
+model = XGBClassifier()
+model.load_model(str(MODEL_PATH))
 
 app = FastAPI(title="Drive failure risk API")
 
